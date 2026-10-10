@@ -1,74 +1,104 @@
-# Taller 5
+# Taller 5: análisis de la tasa de transferencia con iperf3
 
-## Alcance
+**Autores:** Natalia Orjuela, Jimmy Millán y Santiago León.
 
-Esta entrega estudia la **tasa de transferencia medida en función de la tasa configurada** en iperf3, conforme a la alternativa docente comunicada por la estudiante. No estima latencia ni presenta 5, 10 y 15 Mbps como capacidad del enlace. Sus autores son Natalia Orjuela, Jimmy Millán y Santiago León.
+## Descripción de la práctica
 
-Las tres salidas de texto aportan 300 intervalos por sesión: 900 intervalos y 15 ventanas de aproximadamente 60 segundos. Hay una sesión por nivel; cinco ventanas consecutivas no son cinco réplicas independientes. La asignación de cada archivo a su nivel se toma del informe original: el comando y la tasa objetivo no están registrados explícitamente en las trazas.
+En esta práctica se estudió cómo cambia la tasa de transferencia al configurar distintos niveles de tráfico en iperf3. Se siguió la alternativa propuesta por el docente, de acuerdo con los datos disponibles para desarrollar el ejercicio.
 
-## Archivos
+Se utilizó una conexión de red compartida desde un celular para conectar dos máquinas: una actuó como servidor y la otra como cliente. Se realizaron tres pruebas TCP con tasas configuradas de **5M, 10M y 15M**, equivalentes a **5, 10 y 15 Mbps**. Estos valores indican la tasa objetivo de cada prueba; no representan la capacidad total de la red.
 
-- `informe.pdf`: informe final de hasta cinco páginas.
-- `main.tex`, `resultados.tex`, `tabla_resumen.tex`, `tabla_predicciones.tex`: fuentes LaTeX. Los tres últimos se regeneran mediante el programa.
-- `analisis.py`: extracción, controles, agregación, ajuste, evaluación y figuras. No genera tráfico de red.
-- `requirements.txt`: versiones principales utilizadas para el análisis.
-- `datos/traza5.txt`, `datos/traza10.txt`, `datos/traza15.txt`: copias sin cambios de las trazas proporcionadas.
-- `intervalos.csv`: los 900 intervalos extraídos.
-- `ventanas.csv`: las 15 ventanas agregadas.
-- `resumen_escenarios.csv`: resumen por nivel.
-- `predicciones.csv`: resultados de las cinco ventanas reservadas de 15 Mbps.
-- `resultados.json`: coeficientes, métricas, versiones y hashes SHA-256 de las trazas.
-- `figuras/`: las tres figuras usadas en el informe.
-- `DICCIONARIO_DATOS.md`: campos, unidades, fórmulas y significado de vacíos.
+El informe analiza el caudal obtenido, sus variaciones, las retransmisiones TCP y los cambios en la ventana de congestión (Cwnd). También presenta una regresión lineal para estimar la tasa medida a partir de la tasa configurada.
 
-## Reproducir el análisis
+## Contenido de la entrega
 
-Se probó con Python 3.12; las versiones exactas del análisis se conservan en `resultados.json` y `requirements.txt`. Desde esta carpeta:
+| Archivo o carpeta | Contenido |
+|---|---|
+| `informe.pdf` | Informe de cinco páginas con el método, las figuras, los resultados y las conclusiones. |
+| `analisis.py` | Programa que procesa las trazas, construye las tablas, ajusta el modelo y genera las figuras. |
+| `datos/` | Registros originales de las pruebas: `traza5.txt`, `traza10.txt` y `traza15.txt`. |
+| `intervalos.csv` | Datos extraídos de los 900 intervalos registrados. |
+| `ventanas.csv` | Datos agrupados en 15 ventanas de aproximadamente 60 segundos. |
+| `resumen_escenarios.csv` | Resumen de las mediciones para cada tasa configurada. |
+| `predicciones.csv` | Predicciones y errores de las cinco ventanas de la prueba de 15 Mbps. |
+| `resultados.json` | Coeficientes, métricas, versiones de las bibliotecas y códigos SHA-256 para comprobar la integridad de las trazas. |
+| `figuras/` | Las tres figuras utilizadas en el informe. |
+| `main.tex` | Fuente principal del informe en LaTeX. |
+| `resultados.tex`, `tabla_resumen.tex`, `tabla_predicciones.tex` | Resultados y tablas que el programa genera para incorporarlos al informe. |
+| `requirements.txt` | Bibliotecas de Python y versiones utilizadas. |
+| `DICCIONARIO_DATOS.md` | Descripción de las columnas, sus unidades y los campos vacíos. |
+
+## Cómo se realizó el análisis
+
+Los registros se agruparon en ventanas de 60 intervalos consecutivos. Cada ventana dura aproximadamente un minuto. Para calcular su tasa de transferencia se sumaron los bytes reportados y se dividieron por la duración efectiva:
+
+```text
+tasa_medida_mbps = 8 * bytes_iperf_tx_aprox / (duracion_s * 1e6)
+```
+
+Los bytes son aproximados porque las salidas de texto de iperf3 contienen valores redondeados. Para convertir las unidades se usaron 1024 bytes por KByte y 1048576 bytes por MByte. Las tasas se expresan en Mbps y la Cwnd en KiB.
+
+La regresión se entrenó con las pruebas completas de **5 y 10 Mbps**, que reúnen diez ventanas. La prueba completa de **15 Mbps**, con cinco ventanas, se dejó para evaluar el modelo. Así, ninguna prueba aporta ventanas a ambos conjuntos. Las ventanas de una misma prueba son segmentos de esa medición, no repeticiones independientes.
+
+La evaluación se hizo con registros que ya estaban disponibles. Además, el nivel de 15 Mbps está fuera del rango de entrenamiento de 5 a 10 Mbps. Por ello, se presenta como una **evaluación retrospectiva por extrapolación**, no como una predicción registrada antes de realizar la prueba.
+
+## Principales resultados
+
+El modelo obtenido en el informe es:
+
+```text
+tasa_predicha_mbps = 0.0188 + 0.9966 * tasa_configurada_mbps
+```
+
+Para 15 Mbps predice aproximadamente **14,9675 Mbps**. Su error absoluto medio (MAE) es de **0,0456 Mbps** y su RMSE es de **0,0464 Mbps**. Los coeficientes de la ecuación están redondeados; el programa calcula las predicciones con los valores completos.
+
+El modelo se comparó con dos alternativas: usar siempre la mediana de las tasas de entrenamiento o asumir que la tasa medida será igual a la configurada (`y = x`). Esta última obtuvo un MAE menor, de **0,0132 Mbps**. En estas pruebas, la regresión no ofrece una mejora frente a usar directamente la tasa objetivo.
+
+El R² de la regresión es negativo (**−29,0830**). Esto puede ocurrir aunque el error absoluto sea pequeño, porque las tasas de las cinco ventanas evaluadas son muy similares entre sí. El informe explica esta diferencia y limita sus conclusiones a las pruebas disponibles.
+
+También se identificaron caídas puntuales del caudal y cambios en Cwnd. Se contaron los intervalos cuya tasa fue inferior al 70 % del objetivo para describir esas caídas. Ese criterio, junto con las retransmisiones, no basta para confirmar congestión ni determinar su causa.
+
+## Cómo ejecutar el programa
+
+El análisis se realizó con **Python 3.12.14**. Las versiones de las bibliotecas están en `requirements.txt` y `resultados.json`.
+
+Abre una terminal en la carpeta de la entrega y crea un entorno virtual:
 
 ```text
 python -m venv .venv
 ```
 
-En Windows PowerShell, sin necesidad de activar el entorno:
+En Windows PowerShell:
 
 ```text
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe analisis.py
 ```
 
-En Linux/macOS:
+En Linux o macOS:
 
 ```text
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python analisis.py
 ```
 
-El programa regenera CSV, JSON, tablas y figuras junto a `analisis.py`, independientemente del directorio desde el que se invoque. Falla si encuentra un número inesperado de intervalos, discontinuidades, duraciones inválidas o discrepancias en el total de retransmisiones. No necesita tener instalado iperf3 para analizar estas trazas existentes.
+El programa vuelve a generar los CSV, los resultados JSON, las tablas LaTeX y las figuras. Comprueba la continuidad de los intervalos, las duraciones y los totales de retransmisiones; si encuentra una inconsistencia, muestra un error. Para analizar los archivos existentes no es necesario instalar iperf3 ni repetir las mediciones de red.
 
-## Compilar el informe
+## Cómo generar el PDF
 
-Se verificó con pdfLaTeX de MiKTeX 25.12 (pdfTeX 1.40.28). En esta carpeta, después de ejecutar el análisis:
+El PDF ya está incluido. Para volver a generarlo, instala una distribución LaTeX, ejecuta primero el análisis y luego utiliza estos comandos desde la carpeta de la entrega:
 
 ```text
 pdflatex -interaction=nonstopmode -halt-on-error -jobname=informe main.tex
 pdflatex -interaction=nonstopmode -halt-on-error -jobname=informe main.tex
 ```
 
-Requiere una distribución LaTeX con los paquetes indicados en `main.tex`. La instrucción `\spanishplainpercent` evita la incompatibilidad local de porcentajes de babel encontrada al revisar el original. La segunda compilación resuelve referencias y marcadores. Los archivos auxiliares no forman parte de la entrega.
+La segunda compilación actualiza los marcadores del documento. El informe se compiló con **MiKTeX 25.12 y pdfTeX 1.40.28**.
 
-## Decisiones metodológicas
+## Alcance de los datos
 
-1. Cada ventana contiene 60 intervalos consecutivos, no exactamente 60 segundos de reloj. Su duración es la diferencia entre la última marca final y la primera inicial.
-2. Las transferencias de texto se convierten con KBytes = 1024 bytes y MBytes = 1048576 bytes. Como los números impresos están redondeados, los bytes reconstruidos son aproximados.
-3. La tasa agregada es `8 * bytes_iperf_tx_aprox / (duracion_s * 1e6)`. No se obtiene como promedio simple de tasas impresas. Estas últimas se conservan para gráficas temporales y variabilidad.
-4. El entrenamiento usa completas las sesiones de 5 y 10 Mbps (10 ventanas). La evaluación usa completa la sesión de 15 Mbps (5 ventanas). No se mezclan ventanas de una sesión entre ambos conjuntos.
-5. La evaluación es retrospectiva y por extrapolación. Las trazas existían antes de preparar el análisis. El nivel configurado, no el caudal futuro medido, es la entrada del modelo. No hubo pronóstico prospectivo ni registro previo a una nueva medición.
-6. Se comparan la regresión, la mediana del caudal de entrenamiento y la referencia `y = x` (seguir el objetivo configurado). Todos los errores se calculan sobre la misma sesión reservada.
-7. El R² usa la media del conjunto de evaluación como referencia matemática. La muy pequeña variación de caudal dentro de ese conjunto hace que el R² sea sensible a sesgos pequeños. Se reporta aun cuando resulte negativo.
-8. El 70 % de la tasa objetivo es un umbral exploratorio para contar intervalos de caída, no una prueba de congestión. Cwnd y retransmisiones no determinan por sí solos la causa de una perturbación.
+Se trabajó únicamente con los registros obtenidos en la práctica. No se midieron RTT, pérdida ICMP, capacidad del enlace, carga total de la red, contadores RX/TX de interfaz, descartes ni errores. Tampoco se registraron marcas de tiempo absolutas. Los campos correspondientes permanecen vacíos; no se reemplazaron por ceros.
 
-## Qué no puede recuperarse
+La conexión mediante el celular describe el montaje de la práctica, pero las trazas no incluyen los detalles técnicos del medio, la interfaz o la topología. Tampoco contienen las versiones de iperf3 y del sistema operativo de las máquinas utilizadas. Las versiones documentadas en esta entrega corresponden al procesamiento posterior de los datos.
 
-No se inventan RTT, pérdida ICMP, capacidad nominal, carga total del enlace, RX/TX de interfaz, descartes, errores, marcas de reloj, medio o topología. Los campos correspondientes están vacíos. Los resúmenes del receptor no permiten reconstruir bytes RX por ventana. Las versiones del iperf3 y del sistema operativo de medición son desconocidas; las versiones de Python y bibliotecas corresponden al análisis posterior.
-
-Esta entrega documenta el análisis completo que permiten las trazas disponibles. No contiene sesiones nuevas ni acredita un escenario de saturación. Para una validación prospectiva se requieren nuevas mediciones, réplicas y registro previo de predicciones.
+Los resultados describen las tres pruebas disponibles. Para comprobar si se mantienen en otras condiciones o estudiar una posible saturación, sería necesario realizar nuevas pruebas con repeticiones independientes y mediciones adicionales.
