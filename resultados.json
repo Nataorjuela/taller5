@@ -1,0 +1,91 @@
+{
+  "modelo": "tasa_medida_mbps = intercepto + pendiente * escenario_mbps",
+  "intercepto_mbps": 0.018787537496757878,
+  "pendiente": 0.9965839022258959,
+  "entrenamiento": {
+    "sesiones": [
+      "sesion_5",
+      "sesion_10"
+    ],
+    "ventanas": 10,
+    "rango_x_mbps": [
+      5,
+      10
+    ]
+  },
+  "evaluacion": {
+    "sesiones": [
+      "sesion_15"
+    ],
+    "ventanas": 5,
+    "x_mbps": 15,
+    "tipo": "retrospectiva por extrapolación"
+  },
+  "metricas_modelo": {
+    "mae_mbps": 0.04560421773226153,
+    "rmse_mbps": 0.04638162701380493,
+    "r2": -29.08300638024048
+  },
+  "metricas_mediana": {
+    "mae_mbps": 7.516731766371164,
+    "rmse_mbps": 7.516736523134415,
+    "r2": -790109.6810255733
+  },
+  "metricas_identidad": {
+    "mae_mbps": 0.013150288617458372,
+    "rmse_mbps": 0.015634600736784326,
+    "r2": -2.4182424854077866
+  },
+  "mediana_entrenamiento_mbps": 7.496418522246294,
+  "prediccion_15_mbps": 14.967546070885197,
+  "resumen": [
+    {
+      "escenario_mbps": 5,
+      "n_ventanas": 5,
+      "tasa_mediana_mbps": 4.9990454409068175,
+      "tasa_min_mbps": 4.997379370104984,
+      "tasa_max_mbps": 5.014852724545909,
+      "tasa_total_mbps": 5.001707519999999,
+      "retransmisiones": 80,
+      "cwnd_min_kib": 248.0,
+      "intervalos_bajo_70pct": 0,
+      "transferencia_aprox_mib": 178.875
+    },
+    {
+      "escenario_mbps": 10,
+      "n_ventanas": 5,
+      "tasa_mediana_mbps": 9.979912534755794,
+      "tasa_min_mbps": 9.977984319946678,
+      "tasa_max_mbps": 9.993360871854694,
+      "tasa_total_mbps": 9.984627281490619,
+      "retransmisiones": 200,
+      "cwnd_min_kib": 36.8,
+      "intervalos_bajo_70pct": 3,
+      "transferencia_aprox_mib": 357.09000000000003
+    },
+    {
+      "escenario_mbps": 15,
+      "n_ventanas": 5,
+      "tasa_mediana_mbps": 15.007219711999996,
+      "tasa_min_mbps": 15.004718925512416,
+      "tasa_max_mbps": 15.023996927999997,
+      "tasa_total_mbps": 15.013150539782007,
+      "retransmisiones": 123,
+      "cwnd_min_kib": 113.0,
+      "intervalos_bajo_70pct": 3,
+      "transferencia_aprox_mib": 536.9300000000001
+    }
+  ],
+  "versiones": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pandas": "3.0.1",
+    "matplotlib": "3.11.2",
+    "scikit_learn": "1.9.1"
+  },
+  "sha256_trazas": {
+    "traza5.txt": "6425432944dd9852e2a9792c21d45f05befb32f758c2e6bdf730f222362a0af5",
+    "traza10.txt": "ca2ba448eb19295cda4dd991881ea8d0c8aa5cd709539954663e0fc0068733cb",
+    "traza15.txt": "7f8842a6fcf2a8d5e304b7d54739932660340dfa459bac9123f78cf04f0fb28a"
+  }
+}
